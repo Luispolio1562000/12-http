@@ -3,12 +3,14 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Place } from './place.model';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, tap, throwError } from 'rxjs';
+import { ErrorService } from '../shared/error.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PlacesService {
   private httpClient = inject(HttpClient);
+  private errorService = inject(ErrorService);
 
   private userPlaces = signal<Place[]>([]);
   loadedUserPlaces = this.userPlaces.asReadonly();
@@ -45,7 +47,7 @@ export class PlacesService {
       .pipe(
         catchError((error) => {
           this.userPlaces.set(prevPlaces);
-
+          this.errorService.showError('Falló al guardar el lugar seleccionado');
           return throwError(
             () => new Error('Falló al guardar el lugar seleccionado')
           );
@@ -53,7 +55,23 @@ export class PlacesService {
       );
   }
 
-  removeUserPlace(place: Place) {}
+  removeUserPlace(place: Place) {
+    const prevPlaces = this.userPlaces();
+    if (prevPlaces.some((p) => p.id === place.id)) {
+      this.userPlaces.set(prevPlaces.filter((p) => p.id !== place.id));
+    }
+    return this.httpClient
+      .delete('http://localhost:3000/user-places/' + place.id)
+      .pipe(
+        catchError((error) => {
+          this.userPlaces.set(prevPlaces);
+          this.errorService.showError('Falló al borrar el lugar seleccionado');
+          return throwError(
+            () => new Error('Falló al borrar el lugar seleccionado')
+          );
+        })
+      );
+  }
 
   private fetchPlaces(url: string, errorMessage: string) {
     return this.httpClient.get<{ places: Place[] }>(url).pipe(

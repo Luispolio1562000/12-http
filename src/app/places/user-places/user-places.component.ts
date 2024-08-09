@@ -1,4 +1,11 @@
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { PlacesComponent } from '../places.component';
 import { PlacesContainerComponent } from '../places-container/places-container.component';
 import { PlacesService } from '../places.service';
@@ -29,6 +36,13 @@ export class UserPlacesComponent implements OnInit {
         console.log('done');
       },
     });
+    this.destroyRef.onDestroy(() => {
+      subscription.unsubscribe();
+    });
+  }
+
+  deletePlaceSelect(dataPlace: Place) {
+    const subscription =  this.placesService.removeUserPlace(dataPlace).subscribe()
     this.destroyRef.onDestroy(() => {
       subscription.unsubscribe();
     });
